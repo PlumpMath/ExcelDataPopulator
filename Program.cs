@@ -23,53 +23,88 @@ namespace ExcelDataPopulator
         {
             var tempFilePath = Path.Combine(Path.GetTempPath(), Path.ChangeExtension(Path.GetRandomFileName(), ".xlsx")); ;
 
-            var items = Enumerable.Range(1, 10000).Select(i => new SampleObject { A = "A" + i, B = "B" + i, C = "C" + i, D = "D" + i, E = "E" + i }).ToList();
-            //Enumerable.Range(0, 127).Aggregate((x, y) => { Debug.WriteLine(y + " = " + (char)y); return 0; });
-
+            // prepare data source
+            var items = Enumerable.Range(1, 100000).Select(i => new SampleObject { A = "A" + i, B = "B" + i, C = "C" + i, D = "D" + i, E = "E" + i }).ToList();
+            
+            // uncomment 1 option below to verify the performance and results
             //Populate(tempFilePath, WaysToAssignValues);
-            Populate(tempFilePath, ws => PopulateItemsWithSingleCellMethod(ws, items));
+            //Populate(tempFilePath, ws => PopulateItemsWithSingleCellMethod(ws, items));
+            //Populate(tempFilePath, ws => PopulateItemsWithMultiCellsOneRowMethod(ws, items));
+            Populate(tempFilePath, ws => PopulateItemsWithMultiCellsAndRowsMethod(ws, items));
 
-            //Process.Start(tempFilePath);
-            //Console.Read();
+            Process.Start(tempFilePath);
+            Console.Read();
 
             // clean up
             //File.Delete(filePath);
         }
 
-        // example of ways to set cell value 
-        static void WaysToAssignValues(Worksheet ws)
+        static void WaysToAssignValues(Worksheet worksheet)
         {
+            LogFormat("Ways to populate values into excel");
             // DO NOT do this as it will create memory leak (excel stays as background process, visible in task manager)
             // best pratice is to hold the object into a variable then call dispose (release com object)
             //ws.get_Range("C5").Value = "ABC";
 
-            // single cell
-            var r1 = ws.get_Range("A1");
+            var r1 = worksheet.get_Range("A1"); // single cell
             r1.Value = "A1";
             DisposeCOMObject(r1);
 
-            var r2 = ws.get_Range("A2:C2"); // multiple cell in 1 row
+            var r2 = worksheet.get_Range("A2:C2"); // multi cells in 1 row
             r2.Value = new[] { "A2", "B2", "C2" };
             DisposeCOMObject(r2);
 
-            var r3 = ws.get_Range("A3:C4"); // multiple cells/rows
+            var r3 = worksheet.get_Range("A3:C4"); // multi cells/rows
             r3.Value = new string[,] { { "A3", "B3", "C3" }, { "A4", "B4", "C4" } }; ;
             DisposeCOMObject(r3);
         }
 
-        static void PopulateItemsWithSingleCellMethod(Worksheet ws, IList<SampleObject> items)
+        static void PopulateItemsWithSingleCellMethod(Worksheet worksheet, IList<SampleObject> items)
         {
             LogFormat("Start populating {0} rows using single cell method", items.Count.ToString());
             for (int i = 0; i < items.Count; i++)
             {
                 var item = items[i];
                 var rowIndex = i + 1;
-                var r1 = ws.get_Range("A" + rowIndex); r1.Value = item.A; DisposeCOMObject(r1);
-                var r2 = ws.get_Range("B" + rowIndex); r2.Value = item.B; DisposeCOMObject(r2);
-                var r3 = ws.get_Range("C" + rowIndex); r3.Value = item.C; DisposeCOMObject(r3);
-                var r4 = ws.get_Range("D" + rowIndex); r4.Value = item.D; DisposeCOMObject(r4);
-                var r5 = ws.get_Range("E" + rowIndex); r5.Value = item.E; DisposeCOMObject(r5);
+                var r1 = worksheet.get_Range("A" + rowIndex); r1.Value = item.A; DisposeCOMObject(r1);
+                var r2 = worksheet.get_Range("B" + rowIndex); r2.Value = item.B; DisposeCOMObject(r2);
+                var r3 = worksheet.get_Range("C" + rowIndex); r3.Value = item.C; DisposeCOMObject(r3);
+                var r4 = worksheet.get_Range("D" + rowIndex); r4.Value = item.D; DisposeCOMObject(r4);
+                var r5 = worksheet.get_Range("E" + rowIndex); r5.Value = item.E; DisposeCOMObject(r5);
             }
+        }
+
+        static void PopulateItemsWithMultiCellsOneRowMethod(Worksheet worksheet, IList<SampleObject> items)
+        {
+            LogFormat("Start populating {0} rows using multi cells (per 1 row) method", items.Count.ToString());
+            for (int i = 0; i < items.Count; i++)
+            {
+                var item = items[i];
+                var rowIndex = i + 1;
+                var r = worksheet.get_Range(string.Format("A{0}:E{0}", rowIndex));
+                r.Value = new[] { item.A, item.B, item.C, item.D, item.E };
+                DisposeCOMObject(r);
+            }
+        }
+
+        static void PopulateItemsWithMultiCellsAndRowsMethod(Worksheet worksheet, IList<SampleObject> items)
+        {
+            LogFormat("Start populating {0} rows using multi cells and rows method", items.Count.ToString());
+            var stringArray = new string[items.Count, 5];
+            for (int i = 0; i < items.Count; i++)
+            {
+                var item = items[i];
+                var rowIndex = i + 1;
+                stringArray[i, 0] = item.A;
+                stringArray[i, 1] = item.B;
+                stringArray[i, 2] = item.C;
+                stringArray[i, 3] = item.D;
+                stringArray[i, 4] = item.E;
+            }
+
+            var r = worksheet.get_Range(string.Format("A{0}:E{1}", 1, items.Count));
+            r.Value = stringArray;
+            DisposeCOMObject(r);
         }
 
         static void Populate(string filePath, Action<Worksheet> populateData)
