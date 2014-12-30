@@ -9,23 +9,27 @@ using System.Threading.Tasks;
 
 namespace ExcelDataPopulator
 {
-    class SampleObject
-    {
-        public string A { get; set; }
-        public string B { get; set; }
-        public string C { get; set; }
-        public string D { get; set; }
-        public string E { get; set; }
-    }
     class Program
     {
         static void Main(string[] args)
+        {
+            var sw = Stopwatch.StartNew();
+            //new NumberGenerator().Generate();
+
+            RunPopulate();
+
+            Console.WriteLine("Finished in {0} ms", sw.ElapsedMilliseconds);
+            sw.Stop();
+            Console.Read();
+        }
+
+        static void RunPopulate()
         {
             var tempFilePath = Path.Combine(Path.GetTempPath(), Path.ChangeExtension(Path.GetRandomFileName(), ".xlsx")); ;
 
             // prepare data source
             var items = Enumerable.Range(1, 100000).Select(i => new SampleObject { A = "A" + i, B = "B" + i, C = "C" + i, D = "D" + i, E = "E" + i }).ToList();
-            
+
             // uncomment 1 option below to verify the performance and results
             //Populate(tempFilePath, WaysToAssignValues);
             //Populate(tempFilePath, ws => PopulateItemsWithSingleCellMethod(ws, items));
