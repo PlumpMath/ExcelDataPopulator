@@ -14,9 +14,14 @@ namespace ExcelDataPopulator
         static void Main(string[] args)
         {
             var sw = Stopwatch.StartNew();
-            //new NumberGenerator().Generate();
 
-            RunPopulate();
+            for (int i = 0; i < 1000; i++)
+            {
+
+                new NumberGenerator().Generate();
+            }
+
+            //RunPopulate();
 
             Console.WriteLine("Finished in {0} ms", sw.ElapsedMilliseconds);
             sw.Stop();
