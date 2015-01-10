@@ -16,25 +16,40 @@ namespace ExcelDataPopulator
         {
             var sw = Stopwatch.StartNew();
 
-            //var items = Enumerable.Range(1, 1000000).Select(i => new SampleObject { A = "A" + i, B = "B" + i, C = "C" + i, D = "D" + i, E = "E" + i }).ToList();
-            //string[,] stringArray = null;
+            var items = Enumerable.Range(1, 1000000).Select(i => new SampleObject { A = "A" + i, B = "B" + i, C = "C" + i, D = "D" + i, E = "E" + i }).ToList();
+            string[,] stringArray = null;
 
-            //var converter = StringArrayConverter.ConvertTo2DStringArrayWithExpressionTree<SampleObject>();
-            //for (int i = 0; i < 10; i++)
-            //{
-            //    //stringArray = StringArrayConverter.ConvertTo2DStringArrayStatically(items);
-            //    stringArray = converter(items);
-            //    //stringArray = StringArrayConverter.ConvertTo2DStringArrayWithReflection(items);
-            //    //new NumberGenerator().Generate();
+            LogFormat("Initialized {0} rows, {1} ms", items.Count.ToString(), sw.ElapsedMilliseconds.ToString());
+            sw.Restart();
+            
+            for (int i = 0; i < 10; i++)
+                stringArray = StringArrayConverter.ConvertTo2DStringArrayStatically(items);
+
+            LogFormat("Convert with statically is completed in {0} ms", sw.ElapsedMilliseconds.ToString());
+            sw.Restart();
+            
+            for (int i = 0; i < 10; i++)
+                stringArray = StringArrayConverter.ConvertTo2DStringArrayWithReflection(items);
+
+            LogFormat("Convert with reflection is completed in {0} ms", sw.ElapsedMilliseconds.ToString());
+            sw.Restart();
+
+            for (int i = 0; i < 10; i++)
+                stringArray = StringArrayConverter.ConvertTo2DStringArrayWithExpressionTree<SampleObject>()(items);
+
+            LogFormat("Convert with expression tree is completed in {0} ms", sw.ElapsedMilliseconds.ToString());
+            sw.Restart();
+
+            //new NumberGenerator().Generate();
             //}
             //Console.WriteLine(stringArray[items.Count - 1, 0]);
 
             //RunPopulate();
 
-            var obj = new SampleObject { A = "StringA", B = "StringB", C = "StringC", D = "StringD", E = "StringE" };
-            PrintObjectStatically(obj);
-            PrintObjectWithReflection(obj);
-            PrintObjectWithExpressionTree(obj);
+            //var obj = new SampleObject { A = "StringA", B = "StringB", C = "StringC", D = "StringD", E = "StringE" };
+            //PrintObjectStatically(obj);
+            //PrintObjectWithReflection(obj);
+            //PrintObjectWithExpressionTree(obj);
 
             Console.WriteLine("Finished in {0} ms", sw.ElapsedMilliseconds);
             sw.Stop();
@@ -114,7 +129,7 @@ namespace ExcelDataPopulator
         static void PopulateItemsWithMultiCellsAndRowsMethod(Worksheet worksheet, IList<SampleObject> items)
         {
             LogFormat("Start populating {0} rows using multi cells and rows method", items.Count.ToString());
-            
+
             var stringArray = StringArrayConverter.ConvertTo2DStringArrayStatically(items);
 
             LogFormat("Completed converting the data into string array");
@@ -199,7 +214,7 @@ namespace ExcelDataPopulator
             var compiled = Expression.Lambda<Action<T>>(body, instanceParameter).Compile();
             return compiled;
         }
-        
+
 
         static void Populate(string filePath, Action<Worksheet> populateData)
         {
