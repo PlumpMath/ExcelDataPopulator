@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -15,13 +16,25 @@ namespace ExcelDataPopulator
         {
             var sw = Stopwatch.StartNew();
 
-            for (int i = 0; i < 1000; i++)
-            {
+            //var items = Enumerable.Range(1, 1000000).Select(i => new SampleObject { A = "A" + i, B = "B" + i, C = "C" + i, D = "D" + i, E = "E" + i }).ToList();
+            //string[,] stringArray = null;
 
-                new NumberGenerator().Generate();
-            }
+            //var converter = StringArrayConverter.ConvertTo2DStringArrayWithExpressionTree<SampleObject>();
+            //for (int i = 0; i < 10; i++)
+            //{
+            //    //stringArray = StringArrayConverter.ConvertTo2DStringArrayStatically(items);
+            //    stringArray = converter(items);
+            //    //stringArray = StringArrayConverter.ConvertTo2DStringArrayWithReflection(items);
+            //    //new NumberGenerator().Generate();
+            //}
+            //Console.WriteLine(stringArray[items.Count - 1, 0]);
 
             //RunPopulate();
+
+            var obj = new SampleObject { A = "StringA", B = "StringB", C = "StringC", D = "StringD", E = "StringE" };
+            PrintObjectStatically(obj);
+            PrintObjectWithReflection(obj);
+            PrintObjectWithExpressionTree(obj);
 
             Console.WriteLine("Finished in {0} ms", sw.ElapsedMilliseconds);
             sw.Stop();
@@ -33,13 +46,15 @@ namespace ExcelDataPopulator
             var tempFilePath = Path.Combine(Path.GetTempPath(), Path.ChangeExtension(Path.GetRandomFileName(), ".xlsx")); ;
 
             // prepare data source
-            var items = Enumerable.Range(1, 100000).Select(i => new SampleObject { A = "A" + i, B = "B" + i, C = "C" + i, D = "D" + i, E = "E" + i }).ToList();
+            var items = Enumerable.Range(1, 10000).Select(i => new SampleObject { A = "A" + i, B = "B" + i, C = "C" + i, D = "D" + i, E = "E" + i }).ToList();
 
             // uncomment 1 option below to verify the performance and results
             //Populate(tempFilePath, WaysToAssignValues);
             //Populate(tempFilePath, ws => PopulateItemsWithSingleCellMethod(ws, items));
             //Populate(tempFilePath, ws => PopulateItemsWithMultiCellsOneRowMethod(ws, items));
-            Populate(tempFilePath, ws => PopulateItemsWithMultiCellsAndRowsMethod(ws, items));
+            //Populate(tempFilePath, ws => PopulateItemsWithMultiCellsAndRowsMethod(ws, items));
+            //Populate(tempFilePath, ws => PopulateItemsWithMultiCellsAndRowsMethodWithReflection(ws, items));
+            Populate(tempFilePath, ws => PopulateItemsWithMultiCellsAndRowsMethodWithExpressionTree(ws, items));
 
             Process.Start(tempFilePath);
             Console.Read();
@@ -99,22 +114,92 @@ namespace ExcelDataPopulator
         static void PopulateItemsWithMultiCellsAndRowsMethod(Worksheet worksheet, IList<SampleObject> items)
         {
             LogFormat("Start populating {0} rows using multi cells and rows method", items.Count.ToString());
-            var stringArray = new string[items.Count, 5];
-            for (int i = 0; i < items.Count; i++)
-            {
-                var item = items[i];
-                var rowIndex = i + 1;
-                stringArray[i, 0] = item.A;
-                stringArray[i, 1] = item.B;
-                stringArray[i, 2] = item.C;
-                stringArray[i, 3] = item.D;
-                stringArray[i, 4] = item.E;
-            }
+            
+            var stringArray = StringArrayConverter.ConvertTo2DStringArrayStatically(items);
+
+            LogFormat("Completed converting the data into string array");
 
             var r = worksheet.get_Range(string.Format("A{0}:E{1}", 1, items.Count));
             r.Value = stringArray;
             DisposeCOMObject(r);
         }
+
+        static void PopulateItemsWithMultiCellsAndRowsMethodWithReflection(Worksheet worksheet, IList<SampleObject> items)
+        {
+            LogFormat("Start populating {0} rows using multi cells and rows method with reflection", items.Count.ToString());
+
+            var stringArray = StringArrayConverter.ConvertTo2DStringArrayWithReflection(items);
+
+            LogFormat("Completed converting the data into string array");
+
+            var r = worksheet.get_Range(string.Format("A{0}:E{1}", 1, items.Count));
+            r.Value = stringArray;
+            DisposeCOMObject(r);
+        }
+
+        static void PopulateItemsWithMultiCellsAndRowsMethodWithExpressionTree(Worksheet worksheet, IList<SampleObject> items)
+        {
+            LogFormat("Start populating {0} rows using multi cells and rows method with expression tree", items.Count.ToString());
+
+            var stringArray = StringArrayConverter.ConvertTo2DStringArrayWithExpressionTree<SampleObject>()(items);
+
+            LogFormat("Completed converting the data into string array");
+
+            var r = worksheet.get_Range(string.Format("A{0}:E{1}", 1, items.Count));
+            r.Value = stringArray;
+            DisposeCOMObject(r);
+        }
+
+
+        static void PrintObjectStatically(SampleObject obj)
+        {
+            Console.WriteLine("PrintObjectStatically");
+            Console.WriteLine("A:" + obj.A);
+            Console.WriteLine("B:" + obj.B);
+            Console.WriteLine("C:" + obj.C);
+            Console.WriteLine("D:" + obj.D);
+            Console.WriteLine("E:" + obj.E);
+        }
+
+        static void PrintObjectWithReflection<T>(T obj)
+        {
+            Console.WriteLine("PrintObjectWithReflection");
+            var t = obj.GetType();
+
+            foreach (var p in t.GetProperties())
+            {
+                Console.WriteLine(p.Name + ":" + p.GetValue(obj));
+            }
+        }
+
+        static void PrintObjectWithExpressionTree(SampleObject obj)
+        {
+            Console.WriteLine("PrintObjectWithExpressionTree");
+            var printer = PrintStringValues<SampleObject>();
+
+            printer(obj);
+        }
+
+        static Action<T> PrintStringValues<T>()
+        {
+            var t = typeof(T);
+
+            var statements = new List<Expression>();
+            ParameterExpression instanceParameter = Expression.Parameter(t);
+            statements.Add(instanceParameter);
+
+            foreach (var p in t.GetProperties())
+            {
+                var propExpression = Expression.Property(instanceParameter, p);
+                MethodCallExpression mCall = Expression.Call(typeof(Console).GetMethod("WriteLine", new Type[] { typeof(string) }), propExpression);
+                statements.Add(mCall);
+            }
+
+            var body = Expression.Block(statements.ToArray());
+            var compiled = Expression.Lambda<Action<T>>(body, instanceParameter).Compile();
+            return compiled;
+        }
+        
 
         static void Populate(string filePath, Action<Worksheet> populateData)
         {
