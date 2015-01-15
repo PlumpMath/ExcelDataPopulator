@@ -41,11 +41,15 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Examples.cs" />
+    <Compile Include="ExcelAPIHelper.cs" />
+    <Compile Include="ExcelColumnNames.cs" />
+    <Compile Include="LogHelper.cs" />
     <Compile Include="NumberGenerator.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SampleObject.cs" />
-    <Compile Include="StringArrayConverter.cs" />
+    <Compile Include="ArrayConverter.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

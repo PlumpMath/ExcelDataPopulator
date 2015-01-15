@@ -63,7 +63,7 @@ namespace ExcelDataPopulator
         /// <param name="depth">NOT TO BE SPECIFIED DIRECTLY, used for recursive purpose</param>
         /// <param name="slots">NOT TO BE SPECIFIED DIRECTLY, used for recursive purpose</param>
         /// <returns></returns>
-        IEnumerable<int[]> Iterate(int start, int count, int depth = 1, int[] slots = null)
+        public static IEnumerable<int[]> Iterate(int start, int count, int depth = 1, int[] slots = null)
         {
             if (slots == null) slots = new int[depth];
 
