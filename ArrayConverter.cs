@@ -1,5 +1,7 @@
-﻿using System;
+﻿using FastMember;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
@@ -208,9 +210,9 @@ namespace ExcelDataPopulator
             var arrayIndexVariable = Expression.Variable(typeof(int));
             var currentItem = Expression.Variable(t);
 
-            statements.Add(Expression.Call(typeof(Console).GetMethod("WriteLine", new Type[] { typeof(string), typeof(string) })
-                            , Expression.Constant("Converting {0} rows with expression tree")
-                            , Expression.Call(rowCountExpression, typeof(object).GetMethod("ToString"))));
+            //statements.Add(Expression.Call(typeof(Debug).GetMethod("WriteLine", new Type[] { typeof(string), typeof(string) })
+            //                , Expression.Constant("Converting {0} rows with expression tree")
+            //                , Expression.Call(rowCountExpression, typeof(object).GetMethod("ToString"))));
 
             // Initialize string array based on the items row count and the 
             var stringArrayVariable = Expression.Variable(typeof(object[,]));
@@ -261,6 +263,37 @@ namespace ExcelDataPopulator
             var body = Expression.Block(stringArrayVariable.Type, new[] { stringArrayVariable }, statements.ToArray());
             var compiled = Expression.Lambda<Func<IList<T>, object[,]>>(body, listInputParameter).Compile();
             return compiled;
+        }
+
+        internal static object[,] ConvertTo2DObjectArrayWithFastMember<T>(IList<T> items)
+        {
+            //Debug.WriteLine("Fast member - start");
+            var t = typeof(T);
+            var props = t.GetProperties();
+            var stringArray = new object[items.Count + 1, props.Length];
+            var propNames = props.Select(x => x.Name).ToArray();
+            // headers
+            for (int iProp = 0; iProp < props.Length; iProp++)
+            {
+                stringArray[0, iProp] = props[iProp].Name;
+            }
+
+            var accessor = TypeAccessor.Create(t, false);
+
+            //Debug.WriteLine("Fast member - write data");
+            // data
+            for (int i = 0; i < items.Count; i++)
+            {
+                var item = items[i];
+                var arrayIndex = i + 1;
+                for (int iProp = 0; iProp < props.Length; iProp++)
+                {
+                    var val = accessor[item, propNames[iProp]];
+                    if (val != null)
+                        stringArray[arrayIndex, iProp] = val;
+                }
+            }
+            return stringArray;
         }
     }
 }

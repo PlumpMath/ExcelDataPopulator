@@ -16,18 +16,18 @@ namespace ExcelDataPopulator
         {
             var sw = Stopwatch.StartNew();
 
-            var items = Enumerable.Range(1, 1000000).Select(i => new SampleObject { A = "A" + i, B = "B" + i, C = "C" + i, D = "D" + i, E = "E" + i }).ToList();
+            var items = Enumerable.Range(1, 10000).Select(i => new SampleObject { A = "A" + i, B = "B" + i, C = "C" + i, D = "D" + i, E = "E" + i }).ToList();
             string[,] stringArray = null;
             object[,] objectArray = null;
 
             LogHelper.LogFormat("Initialized {0} rows, {1} ms", items.Count.ToString(), sw.ElapsedMilliseconds.ToString());
             sw.Restart();
 
-            for (int i = 0; i < 10; i++)
-                stringArray = ArrayConverter.ConvertTo2DStringArrayStatically(items);
+            //for (int i = 0; i < 10; i++)
+            //    stringArray = ArrayConverter.ConvertTo2DStringArrayStatically(items);
 
-            LogHelper.LogFormat("Convert with string array statically is completed in {0} ms", sw.ElapsedMilliseconds.ToString());
-            sw.Restart();
+            //LogHelper.LogFormat("Convert with string array statically is completed in {0} ms", sw.ElapsedMilliseconds.ToString());
+            //sw.Restart();
 
             //for (int i = 0; i < 10; i++)
             //    stringArray = ArrayConverter.ConvertTo2DStringArrayWithReflection(items);
@@ -41,23 +41,29 @@ namespace ExcelDataPopulator
             //LogHelper.LogFormat("Convert with string array expression tree is completed in {0} ms", sw.ElapsedMilliseconds.ToString());
             //sw.Restart();
 
-            for (int i = 0; i < 10; i++)
-                objectArray = ArrayConverter.ConvertTo2DObjectArrayStatically(items);
+            //for (int i = 0; i < 10; i++)
+            //    objectArray = ArrayConverter.ConvertTo2DObjectArrayStatically(items);
 
-            LogHelper.LogFormat("Convert with statically is completed in {0} ms", sw.ElapsedMilliseconds.ToString());
+            //LogHelper.LogFormat("Convert with statically is completed in {0} ms", sw.ElapsedMilliseconds.ToString());
+            //sw.Restart();
+
+            ////for (int i = 0; i < 10; i++)
+            ////    objectArray = ArrayConverter.ConvertTo2DObjectArrayWithReflection(items);
+
+            ////LogHelper.LogFormat("Convert with reflection is completed in {0} ms", sw.ElapsedMilliseconds.ToString());
+            ////sw.Restart();
+
+            for (int i = 0; i < 10; i++)
+                objectArray = ArrayConverter.ConvertTo2DObjectArrayWithExpressionTree<SampleObject>()(items);
+
+            LogHelper.LogFormat("Convert with expression tree is completed in {0} ms", sw.ElapsedMilliseconds.ToString());
             sw.Restart();
 
-            //for (int i = 0; i < 10; i++)
-            //    objectArray = ArrayConverter.ConvertTo2DObjectArrayWithReflection(items);
+            for (int i = 0; i < 10; i++)
+                objectArray = ArrayConverter.ConvertTo2DObjectArrayWithFastMember(items);
 
-            //LogHelper.LogFormat("Convert with reflection is completed in {0} ms", sw.ElapsedMilliseconds.ToString());
-            //sw.Restart();
-
-            //for (int i = 0; i < 10; i++)
-            //    objectArray = ArrayConverter.ConvertTo2DObjectArrayWithExpressionTree<SampleObject>()(items);
-
-            //LogHelper.LogFormat("Convert with expression tree is completed in {0} ms", sw.ElapsedMilliseconds.ToString());
-            //sw.Restart();
+            LogHelper.LogFormat("Convert with fast member is completed in {0} ms", sw.ElapsedMilliseconds.ToString());
+            sw.Restart();
 
             //new NumberGenerator().Generate();
             //}
