@@ -201,32 +201,81 @@ namespace ExcelDataPopulator
             var r = worksheets[0].get_Range(dataRange);
             r.Value = objectArray;
 
+            LogHelper.LogFormat("Completed data write to excel, Data range: {0}", dataRange);
+
+            //ActiveWorkbook.Names.Add Name:= "NewAmount", RefersToR1C1:= "=OFFSET(Sheet3!R1C1,0,0,COUNTA(Sheet3!C1),COUNTA(Sheet3!R1))"
+            var dynamicRange = string.Format("=OFFSET({0}!R1C1,0,0,COUNTA({0}!C1),COUNTA({0}!R1))", worksheets[0].Name);
+            var names = book.Names;
+            names.Add("RawDataDynamicRange", dynamicRange);
+
+            LogHelper.LogFormat("Completed creation of RawDataDynamicRange: {0}", dynamicRange);
+            
             var pivotCaches = book.PivotCaches();
-            var pivotCache = pivotCaches.Create(XlPivotTableSourceType.xlDatabase, string.Format("RawData!{0}", dataRange));
+            //var pivotCache = pivotCaches.Create(XlPivotTableSourceType.xlDatabase, string.Format("RawData!{0}", dataRange));
+            var pivotCache = pivotCaches.Create(XlPivotTableSourceType.xlDatabase, "RawDataDynamicRange");
             //var pivotCache = pivotCaches.Create(XlPivotTableSourceType.xlDatabase, r);
+            LogHelper.LogFormat("Completed creation of pivotCache");
 
             PivotTables pivotTables = worksheets[1].PivotTables() as PivotTables;
             var pivotTable = pivotTables.Add(pivotCache, worksheets[1].get_Range("A1"), "PivotTable1") as PivotTable;
+            
+            pivotTable.RowAxisLayout(XlLayoutRowType.xlTabularRow);
+            pivotTable.InGridDropZones = true;
+
+            LogHelper.LogFormat("Completed creation of pivotTable");
 
             var fieldA = pivotTable.PivotFields("A") as PivotField;
-            fieldA.Orientation = XlPivotFieldOrientation.xlRowField;
-
             var fieldB = pivotTable.PivotFields("B") as PivotField;
-            fieldB.Orientation = XlPivotFieldOrientation.xlHidden;
-
             var fieldD = pivotTable.PivotFields("D") as PivotField;
-            fieldD.Orientation = XlPivotFieldOrientation.xlPageField;
-
             var fieldE = pivotTable.PivotFields("E") as PivotField;
-            fieldE.Orientation = XlPivotFieldOrientation.xlColumnField;
-
             var fieldC = pivotTable.PivotFields("C") as PivotField;
+            var qtyField = pivotTable.PivotFields("Qty") as PivotField;
+            var amountField = pivotTable.PivotFields("Amount") as PivotField;
+            var priceAvgField = pivotTable.PivotFields("Price") as PivotField;
+
+            LogHelper.LogFormat("Completed creation of fields");
+
+            LogHelper.LogFormat("Original value of ManualUpdate : {0}", pivotTable.ManualUpdate.ToString());
+
+            //PivotField qtyField = pivotTable.AddDataField(pivotTable.PivotFields("Qty"), "Quantity", XlConsolidationFunction.xlSum);
+            //PivotField amountField = pivotTable.AddDataField(pivotTable.PivotFields("Amount"), "SubTotal", XlConsolidationFunction.xlSum);
+            //PivotField priceAvgField = pivotTable.AddDataField(pivotTable.PivotFields("Price"), "Price Average", XlConsolidationFunction.xlAverage);
+
+            pivotTable.ManualUpdate = true;
+
+            LogHelper.LogFormat("After updating value of ManualUpdate : {0}", pivotTable.ManualUpdate.ToString());
+
+            fieldA.Orientation = XlPivotFieldOrientation.xlRowField;
+            LogHelper.LogFormat("Completed layout for FieldA");
+            fieldB.Orientation = XlPivotFieldOrientation.xlHidden;
+            LogHelper.LogFormat("Completed layout for FieldB");
+            fieldD.Orientation = XlPivotFieldOrientation.xlPageField;
+            LogHelper.LogFormat("Completed layout for FieldD");
+            fieldE.Orientation = XlPivotFieldOrientation.xlColumnField;
+            LogHelper.LogFormat("Completed layout for FieldE");
             fieldC.Orientation = XlPivotFieldOrientation.xlDataField;
             fieldC.Function = XlConsolidationFunction.xlCount;
+            LogHelper.LogFormat("Completed layout for FieldC");
+            qtyField.Orientation = XlPivotFieldOrientation.xlDataField;
+            qtyField.Function = XlConsolidationFunction.xlSum;
+            qtyField.NumberFormat = "#,##0_);[Red](#,##0)";
+            LogHelper.LogFormat("Completed layout for qtyField");
 
-            pivotTable.AddDataField(pivotTable.PivotFields("Qty"), "Quantity", XlConsolidationFunction.xlSum);
-            pivotTable.AddDataField(pivotTable.PivotFields("Amount"), "SubTotal", XlConsolidationFunction.xlSum);
-            pivotTable.AddDataField(pivotTable.PivotFields("Price"), "Price Average", XlConsolidationFunction.xlSum);
+            amountField.Orientation = XlPivotFieldOrientation.xlDataField;
+            amountField.Function = XlConsolidationFunction.xlSum;
+            amountField.NumberFormat = "#,##0.00_);[Red](#,##0.00)";
+            LogHelper.LogFormat("Completed layout for amountField");
+
+            priceAvgField.Orientation = XlPivotFieldOrientation.xlDataField;
+            priceAvgField.Function = XlConsolidationFunction.xlSum;
+            priceAvgField.NumberFormat = "#,##0.00_);[Red](#,##0.00)";
+            LogHelper.LogFormat("Completed layout for priceAvg");
+
+            pivotTable.ManualUpdate = false;
+
+            LogHelper.LogFormat("After switching back value of ManualUpdate : {0}", pivotTable.ManualUpdate.ToString());
+
+            LogHelper.LogFormat("Completed the pivot table layout");
 
             ExcelAPIHelper.DisposeCOMObject(r);
         }

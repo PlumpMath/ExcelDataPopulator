@@ -16,8 +16,8 @@ namespace ExcelDataPopulator
         {
             var sw = Stopwatch.StartNew();
 
-            //Examples.RunPopulate();
-            Examples.RunStringArrayConverterPerformance();
+            Examples.RunPopulate();
+            //Examples.RunStringArrayConverterPerformance();
             
             Console.WriteLine("Finished in {0} ms", sw.ElapsedMilliseconds);
             sw.Stop();
